@@ -107,6 +107,7 @@ void push() {							//THIS FUNCTION CREATES A QUEUE WHICH SORTS WRT ARRIVAL TIME
 	int t=temp->Atime;
 	temp->flag=1;
 	temp->Arrival_Flag=1;
+	temp->completed=0;
 	node *Start=front;
 	if ((Start->Atime > t) || (Start->Atime==t && Start->priority > temp->priority)){
         	temp->next = front;
@@ -126,7 +127,7 @@ void push() {							//THIS FUNCTION CREATES A QUEUE WHICH SORTS WRT ARRIVAL TIME
     }
 }
 void main() {
-	int n,m=1;
+	int n;
 	pthread_t p[10];
 	printf("Enter No.of Processes :");				
 	scanf("%d",&n);
@@ -142,6 +143,7 @@ void main() {
 			front->flag=1;
 			front->id=i+1;
 			front->Arrival_Flag=1;
+			front->completed=0;
 			front->Btime=front->Rtime;
 			sem_init(&front->se,0,0);
 			front->next=NULL;
@@ -172,9 +174,8 @@ void main() {
 			Ppush(temp);
 			i++;
 		}
-		if(((clock()-count)/CLOCKS_PER_SEC==1 && Front_P==NULL) || ((clock()-Start_Time)/CLOCKS_PER_SEC==1 && m==1) ) { //TIMER PRINTS 
+		if(((clock()-count)/CLOCKS_PER_SEC==1 && Front_P==NULL)) { //TIMER PRINTS 
 			count=clock();
-			m=0;
 			printf("\n\t\t\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
 		}
 	}
