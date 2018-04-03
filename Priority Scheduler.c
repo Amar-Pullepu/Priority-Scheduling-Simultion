@@ -5,93 +5,95 @@
 #include<time.h>
 #include<pthread.h>
 #include<semaphore.h>
-struct Process {
-	int priority,time,Atime,Btime,id;
-	clock_t arrival;
-	int flag,completed,p;
-	sem_t se;
-	struct Process *next;
-};
-int i=0,z=1;
-float WT=0,TAT=0;
-clock_t start;
-struct Process *front=NULL,*temp,*rear=NULL;
-typedef struct Process node;
-void *processor(node *S) {
-	int y=0;
-	clock_t count;
+struct Process {							//DETAILS OF PROCESS IS STORED IN A STRUCTURE
+	int priority,Rtime,Atime,Btime,id;		//PRIORITY,ARRIVALTIME,REMAINING TIME,BURST TIME,ID OF PROCESS
+	clock_t arrival;						//IT STORES THE VALUE OF CPU CLOCK CYCLES WHEN IT ENTERED INTO THE PROCESS
+	int flag,completed,Arrival_Flag;		//FEW FLAGS TO RUN THE PROGRAM PROPERLY
+	sem_t se;								//SEMOPHORE OF THAT PROCESS
+	struct Process *next;					//LINKLIST NEXT NODE ADDRESS
+}; 
+int i=0,z=1,l=1;								
+float WT=0,TAT=0;							//AVERAGE WAITING TIME AND TURN AROUND TIME
+clock_t Start_Time,count;					//IT STORES THE CPU CLOCK CYCLES WHEN IT START EXECUTING THE PROCESSES AND THE VALUES AFTER EACH SECOND 
+struct Process *front=NULL,*temp,*Front_P=NULL;		//HEADERS OF QUEUES
+typedef struct Process node;				
+void *processor(node *S) {					//PTHREAD FUNCTION OF OUR PROCESS
+	int Preemtion_Flag=0,Timer_Flag=0;		//TWO FLAG BITS TO RUN THE PROCESS CLEARLY
 	while(1) {
-		sem_wait(&S->se);
-		if((S->Atime<=(clock()-start)/CLOCKS_PER_SEC && S->p==1) || y==1) {
-			S->p=0;
-			y=0;
+		sem_wait(&S->se);					//SEMAPHORE WAIT FUNCTION SO THAT NO TWO PROCESSES WILL CONTEXT SWITCH IN BETWEEN
+		if((S->Atime<=(clock()-Start_Time)/CLOCKS_PER_SEC && S->Arrival_Flag==1) || Preemtion_Flag==1) {
+			S->Arrival_Flag=0;
+			Preemtion_Flag=0;
 			count=clock();
 		} 
 		if(S->flag==1) {
-			printf("\nProcess-%d Running \nTimer :%d",S->id,(clock()-start)/CLOCKS_PER_SEC);
+			printf("\nProcess-%d Running \t\t\t\t\tTimer :%d",S->id,(clock()-Start_Time)/CLOCKS_PER_SEC);
 			S->flag=0;
 			S->arrival=clock();
+			Timer_Flag=1;
 		}
-		if((clock()-count)/CLOCKS_PER_SEC==1) {
+		if((clock()-count)/CLOCKS_PER_SEC==1) {	//CHECKS THE VALUE PER SECOND
 			count=clock();
-			printf("\nTimer :%d",(clock()-start)/CLOCKS_PER_SEC);
-			S->time-=1;
-			if(S->time==0) {
-				TAT+=(clock()-S->arrival)/CLOCKS_PER_SEC;
-				WT+=((clock()-S->arrival)/CLOCKS_PER_SEC)-S->Btime;
-				if(rear->next!=NULL) {
+		//	if(Timer_Flag==0)
+			printf("\n\t\t\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
+			S->Rtime-=1;
+			Timer_Flag=0;
+			if(S->Rtime==0) {					//PROCESS TERMINATION CONDITION
+				TAT+=(clock()-S->arrival)/CLOCKS_PER_SEC;			//ADDING TURNAROUND TIME OF THIS PROCESS
+				WT+=((clock()-S->arrival)/CLOCKS_PER_SEC)-S->Btime;	//ADDING WAITING TIME OF THIS PROCESS
+				if(Front_P->next!=NULL) {
 					
-				if(rear->Atime==(clock()-start)/CLOCKS_PER_SEC){
-					rear->next=rear->next->next;
+				if(Front_P->Atime==(clock()-Start_Time)/CLOCKS_PER_SEC){
+					Front_P->next=Front_P->next->next;
 				}
 				else {
-					rear=rear->next;
+					Front_P=Front_P->next;
 				}
-				sem_post(&rear->se);
+				sem_post(&Front_P->se);			//INCREMENTING THE NEXT SEMAPHORE VALUE OF THE PROCESS TO BE EXECUTED
 				}
-				S->completed=7;
-				printf("\nProcess-%d Completed next Process is :%d",S->id,rear->id);
+				S->completed=1;
+				printf("\nProcess-%d Completed next Process is :%d",S->id,Front_P->id);
+				if(Front_P->next==NULL) {
+					Front_P=NULL;
+					l=1;
+				}
+				
 			}
-			else if(rear!=S) {
-				printf("\nProcess-%d Context Switched to Process-%d",S->id,rear->id);
-				y=1;
-				sem_post(&rear->se);
-				sem_wait(&S->se);
+			else if(Front_P!=S) {				//PREEMTION CONDITION
+				printf("\nProcess-%d Context Switched to Process-%d",S->id,Front_P->id);
+				Preemtion_Flag=1;
+				sem_post(&Front_P->se);			//INCREASING SEMAPHORE VALUE THAT WILL PREEMPT THE RUNNING PROCESS
+				sem_wait(&S->se);				//MAKING THE PROCESS TO WAIT UNTIL IT REACHES ITS TURN IN QUEUE
 			}
 		}
-		if(S->completed==7) {
+		if(S->completed==1) {					//PROCESS COMPLETED FLAG IS TURNED TO '1' AND PROCESS TERMINATED
 			break;
 		}
-		sem_post(&S->se);
+		sem_post(&S->se);						//INCREASING SEMAPHORE TO RUN NEXT ITERATION
 	}
 }
-
-void pop() {
-	node *start=rear;
-	printf("\nArrival Time :%d",start->next->Atime);
-}
-void rpush(node *temp) {
-	node *start=rear;
-	if(rear==NULL) {
-		rear=temp;
-		rear->next=NULL;
+void Ppush(node *temp) {						//THIS FUNCTION CREATES A QUEUE WHICH SORTS WRT PRIORITY
+	node *Start=Front_P;
+	if(Front_P==NULL) {
+		Front_P=temp;
+		Front_P->next=NULL;
 	}
 	else{
 	int p=temp->priority;
-	if (start->priority > p) {
-        	temp->next = rear;
-        	rear=temp;
+	if (Start->priority > p) {
+        	temp->next = Front_P;
+        	Front_P=temp;
     	}
     	else {
-        	while (start->next != NULL && start->next->priority< p) {
-            		start = start->next;
+        	while (Start->next != NULL && Start->next->priority< p) {
+            		Start = Start->next;
         	}
-        temp->next = start->next;
-        start->next = temp;
+        temp->next = Start->next;
+        Start->next = temp;
     }
 	}
 }
-void push() {
+void push() {							//THIS FUNCTION CREATES A QUEUE WHICH SORTS WRT ARRIVAL TIME
 	temp=(node *)malloc(sizeof(node));
 	printf("\nEnter Priority of %d Process :",(i+1));
 	scanf("%d",&temp->priority);
@@ -100,34 +102,34 @@ void push() {
 	int p=temp->priority;
 	temp->id=i+1;
 	printf("Enter Burst Time :");
-	scanf("%d",&temp->time);
-	temp->Btime=temp->time;
-	sem_init(&temp->se,0,0);
+	scanf("%d",&temp->Rtime);
+	temp->Btime=temp->Rtime;
+	sem_init(&temp->se,0,0);			//SET SEMAPHORE VALUE OF EVERY PROCESS AS ZERO INITIALLY
 	int t=temp->Atime;
 	temp->flag=1;
-	temp->p=1;
-	node *start=front;
-	if ((start->Atime > t) || (start->Atime==t && start->priority > temp->priority)){
+	temp->Arrival_Flag=1;
+	node *Start=front;
+	if ((Start->Atime > t) || (Start->Atime==t && Start->priority > temp->priority)){
         	temp->next = front;
         	front=temp;
     	}
     	else {
-        	while (start->next != NULL && start->next->Atime <= t) {
-            		if(start->next->Atime==t && temp->priority<start->next->priority) {
+        	while (Start->next != NULL && Start->next->Atime <= t) {
+            		if(Start->next->Atime==t && temp->priority<Start->next->priority) {
             			break;
 					}
 					else
-					start = start->next;
+					Start = Start->next;
             		
         	}
-        temp->next = start->next;
-        start->next = temp;
+        temp->next = Start->next;
+        Start->next = temp;
     }
 }
 void main() {
-	int n,l=1;
+	int n,k=1,m=1;
 	pthread_t p[10];
-	printf("\nEnter No.of Processes :");
+	printf("Enter No.of Processes :");				
 	scanf("%d",&n);
 	while(i<n) {
 		if(front==NULL) {
@@ -137,43 +139,50 @@ void main() {
 			printf("Enter Arrival Time :");
 			scanf("%d",&front->Atime);
 			printf("Enter Burst Time :");
-			scanf("%d",&front->time);
+			scanf("%d",&front->Rtime);
 			front->flag=1;
 			front->id=i+1;
-			front->p=1;
-			front->Btime=front->time;
+			front->Arrival_Flag=1;
+			front->Btime=front->Rtime;
 			sem_init(&front->se,0,0);
 			front->next=NULL;
 		}
 		else {
 			push();
 		}
-		i++;
+	 	i++;
 	}
-	start=clock();
-	i=0;
-	while(i<n) {
+	Start_Time=clock();					//NOTES THE TIME OF EXECUTION INTO START
+	count=clock();						
+	i=0; 
+	printf("\n\t\t\t\t\t\t\tTimer :0");
+	while(front!=NULL) {
 		temp=front;
-		if(temp->Atime<=0) {
+		if(temp->Atime<=0) {			//IF ARRIVAL TIME IS LESS THAN ZERO PROCESS WON'T EXECUTE
 			printf("\nInvalid Arrival Time for Process-%d",temp->id);
 			i++;
 			front=front->next;
 		}
-		if((clock()-start)/CLOCKS_PER_SEC==temp->Atime) {
+		if((clock()-Start_Time)/CLOCKS_PER_SEC==temp->Atime) {		//PROCESS CREATED WHEN ITS ARRIVAL TIME IS REACHED
 			if(l==1) {
 				l=0;
-				sem_post(&temp->se);
+				k=0;
+				sem_post(&temp->se);								//SEMAPHORE VALUE OF FIRST PROCESS IS SET TO '1' SO IT WILL EXECUTE
 			}
-			pthread_create(&p[i],NULL,processor,temp);
+			pthread_create(&p[i],NULL,processor,temp);				//PROCESS IS CREATED HERE WITH AT ITS ARRIVAL TIME
 			front=front->next;
-			rpush(temp);
-			//printf("\nCreation : %d Priority of Rear : %d",temp->Atime,rear->priority);
+			Ppush(temp);
 			i++;
+		}
+		if(((clock()-count)/CLOCKS_PER_SEC==1 && Front_P==NULL) || ((clock()-Start_Time)/CLOCKS_PER_SEC==1 && m==1) ) { //TIMER PRINTS 
+			count=clock();
+			m=0;
+			printf("\n\t\t\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
 		}
 	}
 	for(i=0;i<n;i++) {
 		pthread_join(p[i],NULL);
 	}
-	printf("\nAverage Waiting Time :%f\nAverage Turn Around Time :%f",(float)WT/n,(float)TAT/n);
+	printf("\nAverage Waiting Time :%f\nAverage Turn Around Time :%f",(float)WT/n,(float)TAT/n);	//AVERAGE WAITING TIME AND TURNAROUND TIME IS CALCULATED
 }
 
