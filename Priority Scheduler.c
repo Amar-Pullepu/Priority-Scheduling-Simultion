@@ -18,7 +18,7 @@ clock_t Start_Time,count;					//IT STORES THE CPU CLOCK CYCLES WHEN IT START EXE
 struct Process *front=NULL,*temp,*Front_P=NULL;		//HEADERS OF QUEUES
 typedef struct Process node;				
 void *processor(node *S) {					//PTHREAD FUNCTION OF OUR PROCESS
-	int Preemtion_Flag=0,Timer_Flag=0;		//TWO FLAG BITS TO RUN THE PROCESS CLEARLY
+	int Preemtion_Flag=0,Null_Flag=0;		//TWO FLAG BITS TO RUN THE PROCESS CLEARLY
 	while(1) {
 		sem_wait(&S->se);					//SEMAPHORE WAIT FUNCTION SO THAT NO TWO PROCESSES WILL CONTEXT SWITCH IN BETWEEN
 		if((S->Atime<=(clock()-Start_Time)/CLOCKS_PER_SEC && S->Arrival_Flag==1) || Preemtion_Flag==1) {
@@ -30,19 +30,16 @@ void *processor(node *S) {					//PTHREAD FUNCTION OF OUR PROCESS
 			printf("\nProcess-%d Running \t\t\t\t\tTimer :%d",S->id,(clock()-Start_Time)/CLOCKS_PER_SEC);
 			S->flag=0;
 			S->arrival=clock();
-			Timer_Flag=1;
 		}
 		if((clock()-count)/CLOCKS_PER_SEC==1) {	//CHECKS THE VALUE PER SECOND
 			count=clock();
-		//	if(Timer_Flag==0)
 			printf("\n\t\t\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
 			S->Rtime-=1;
-			Timer_Flag=0;
 			if(S->Rtime==0) {					//PROCESS TERMINATION CONDITION
 				TAT+=(clock()-S->arrival)/CLOCKS_PER_SEC;			//ADDING TURNAROUND TIME OF THIS PROCESS
 				WT+=((clock()-S->arrival)/CLOCKS_PER_SEC)-S->Btime;	//ADDING WAITING TIME OF THIS PROCESS
 				if(Front_P->next!=NULL) {
-					
+				Null_Flag=1;
 				if(Front_P->Atime==(clock()-Start_Time)/CLOCKS_PER_SEC){
 					Front_P->next=Front_P->next->next;
 				}
@@ -52,12 +49,14 @@ void *processor(node *S) {					//PTHREAD FUNCTION OF OUR PROCESS
 				sem_post(&Front_P->se);			//INCREMENTING THE NEXT SEMAPHORE VALUE OF THE PROCESS TO BE EXECUTED
 				}
 				S->completed=1;
-				printf("\nProcess-%d Completed next Process is :%d",S->id,Front_P->id);
-				if(Front_P->next==NULL) {
+				printf("\nProcess-%d completed executing, ",S->id);
+				if(Front_P->next==NULL && Null_Flag==0){
 					Front_P=NULL;
 					l=1;
 				}
-				
+				else{
+					printf("next Process is: %d",Front_P->id);
+				}
 			}
 			else if(Front_P!=S) {				//PREEMTION CONDITION
 				printf("\nProcess-%d Context Switched to Process-%d",S->id,Front_P->id);
@@ -127,7 +126,7 @@ void push() {							//THIS FUNCTION CREATES A QUEUE WHICH SORTS WRT ARRIVAL TIME
     }
 }
 void main() {
-	int n,k=1,m=1;
+	int n,m=1;
 	pthread_t p[10];
 	printf("Enter No.of Processes :");				
 	scanf("%d",&n);
@@ -166,7 +165,6 @@ void main() {
 		if((clock()-Start_Time)/CLOCKS_PER_SEC==temp->Atime) {		//PROCESS CREATED WHEN ITS ARRIVAL TIME IS REACHED
 			if(l==1) {
 				l=0;
-				k=0;
 				sem_post(&temp->se);								//SEMAPHORE VALUE OF FIRST PROCESS IS SET TO '1' SO IT WILL EXECUTE
 			}
 			pthread_create(&p[i],NULL,processor,temp);				//PROCESS IS CREATED HERE WITH AT ITS ARRIVAL TIME
@@ -183,6 +181,6 @@ void main() {
 	for(i=0;i<n;i++) {
 		pthread_join(p[i],NULL);
 	}
-	printf("\nAverage Waiting Time :%f\nAverage Turn Around Time :%f",(float)WT/n,(float)TAT/n);	//AVERAGE WAITING TIME AND TURNAROUND TIME IS CALCULATED
+	printf("\nAverage Waiting Time :%f\nAverage Turn Around Time :%f",(float)WT/n,(float)TAT/n);	//AVERAGE WAITING TIME AND TURNAROUND TIME IS CLACULATED
 }
 
