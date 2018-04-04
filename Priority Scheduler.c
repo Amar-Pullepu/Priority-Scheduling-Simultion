@@ -11,7 +11,7 @@ struct Process {							//DETAILS OF PROCESS IS STORED IN A STRUCTURE
 	int flag,completed,Arrival_Flag;		//FEW FLAGS TO RUN THE PROGRAM PROPERLY
 	sem_t se;								//SEMOPHORE OF THAT PROCESS
 	struct Process *next;					//LINKLIST NEXT NODE ADDRESS
-}; 
+};
 int i=0,z=1,l=1;								
 float WT=0,TAT=0;							//AVERAGE WAITING TIME AND TURN AROUND TIME
 clock_t Start_Time,count;					//IT STORES THE CPU CLOCK CYCLES WHEN IT START EXECUTING THE PROCESSES AND THE VALUES AFTER EACH SECOND 
@@ -33,7 +33,7 @@ void *processor(node *S) {					//PTHREAD FUNCTION OF OUR PROCESS
 		}
 		if((clock()-count)/CLOCKS_PER_SEC==1) {	//CHECKS THE VALUE PER SECOND
 			count=clock();
-			printf("\n\t\t\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
+			printf("\nProcess-%d Running\t\t\t\t\tTimer :%d",S->id,(clock()-Start_Time)/CLOCKS_PER_SEC);
 			S->Rtime-=1;
 			if(S->Rtime==0) {					//PROCESS TERMINATION CONDITION
 				TAT+=(clock()-S->arrival)/CLOCKS_PER_SEC;			//ADDING TURNAROUND TIME OF THIS PROCESS
@@ -176,7 +176,7 @@ void main() {
 		}
 		if(((clock()-count)/CLOCKS_PER_SEC==1 && Front_P==NULL)) { //TIMER PRINTS 
 			count=clock();
-			printf("\n\t\t\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
+			printf("\nNo Process is Running\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
 		}
 	}
 	for(i=0;i<n;i++) {
