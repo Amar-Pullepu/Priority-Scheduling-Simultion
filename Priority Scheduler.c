@@ -36,8 +36,8 @@ void *processor(node *S) {					//PTHREAD FUNCTION OF OUR PROCESS
 			printf("\nProcess-%d Running\t\t\t\t\tTimer :%d",S->id,(clock()-Start_Time)/CLOCKS_PER_SEC);
 			S->Rtime-=1;
 			if(S->Rtime==0) {					//PROCESS TERMINATION CONDITION
-				TAT+=(clock()-S->arrival)/CLOCKS_PER_SEC;			//ADDING TURNAROUND TIME OF THIS PROCESS
-				WT+=((clock()-S->arrival)/CLOCKS_PER_SEC)-S->Btime;	//ADDING WAITING TIME OF THIS PROCESS
+				TAT+=(clock()-Start_Time)/CLOCKS_PER_SEC-S->Atime;			//ADDING TURNAROUND TIME OF THIS PROCESS
+				WT+=((clock()-Start_Time)/CLOCKS_PER_SEC)-S->Atime-S->Btime;	//ADDING WAITING TIME OF THIS PROCESS
 				if(Front_P->next!=NULL) {
 				Null_Flag=1;
 				if(Front_P->Atime==(clock()-Start_Time)/CLOCKS_PER_SEC){
@@ -62,7 +62,7 @@ void *processor(node *S) {					//PTHREAD FUNCTION OF OUR PROCESS
 				printf("\nProcess-%d Context Switched to Process-%d",S->id,Front_P->id);
 				Preemtion_Flag=1;
 				sem_post(&Front_P->se);			//INCREASING SEMAPHORE VALUE THAT WILL PREEMPT THE RUNNING PROCESS
-				sem_wait(&S->se);				//MAKING THE PROCESS TO WAIT UNTIL IT REACHES ITS TURN IN QUEUE
+				sem_wait(&S->se);			//MAKING THE PROCESS TO WAIT UNTIL IT REACHES ITS TURN IN QUEUE
 			}
 		}
 		if(S->completed==1) {					//PROCESS COMPLETED FLAG IS TURNED TO '1' AND PROCESS TERMINATED
@@ -127,7 +127,7 @@ void push() {							//THIS FUNCTION CREATES A QUEUE WHICH SORTS WRT ARRIVAL TIME
     }
 }
 void main() {
-	int n;
+	int n,m=1;
 	pthread_t p[10];
 	printf("Enter No.of Processes :");				
 	scanf("%d",&n);
@@ -176,6 +176,7 @@ void main() {
 		}
 		if(((clock()-count)/CLOCKS_PER_SEC==1 && Front_P==NULL)) { //TIMER PRINTS 
 			count=clock();
+			m=0;
 			printf("\nNo Process is Running\t\t\t\t\tTimer :%d",(clock()-Start_Time)/CLOCKS_PER_SEC);
 		}
 	}
